@@ -30,7 +30,7 @@ pub fn read_header<T: Read + Write>(stream: &mut T) -> Vec<u8> {
     buffer
 }
 
-fn handle_client<T: Read + Write>(mut stream: T, root_path: &str, reload: bool, headers: &str) {
+fn handle_client<T: Read + Write>(mut stream: T, root_path: &str, reload: bool, inject: bool, headers: &str) {
     let buffer = read_header(&mut stream);
     let request_string = str::from_utf8(&buffer).unwrap();
 
@@ -89,7 +89,7 @@ fn handle_client<T: Read + Write>(mut stream: T, root_path: &str, reload: bool, 
         let reload_append = include_bytes!("reload.html");
         #[cfg(feature = "reload")]
         {
-            if extension == Some("html") && reload {
+            if extension == Some("html") && reload && inject {
                 content_length += reload_append.len();
             }
         }
@@ -106,7 +106,7 @@ fn handle_client<T: Read + Write>(mut stream: T, root_path: &str, reload: bool, 
         // Inject code into HTML if reload is enabled
         #[cfg(feature = "reload")]
         {
-            if extension == Some("html") && reload {
+            if extension == Some("html") && reload && inject {
                 // Insert javascript for reloading
                 stream.write_all(reload_append).unwrap();
             }
@@ -121,7 +121,7 @@ fn handle_client<T: Read + Write>(mut stream: T, root_path: &str, reload: bool, 
     }
 }
 
-pub fn run(address: &str, port: u32, path: &str, reload: bool, headers: &str) {
+pub fn run(address: &str, port: u32, path: &str, reload: bool, inject: bool, headers: &str) {
     // Hard coded certificate generated with the following commands:
     // openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 36500 -nodes -subj "/"
     // openssl pkcs12 -export -out identity.pfx -inkey key.pem -in cert.pem
@@ -163,10 +163,10 @@ pub fn run(address: &str, port: u32, path: &str, reload: bool, headers: &str) {
                 if is_https {
                     // acceptor.accept will block indefinitely if called with an HTTP stream.
                     if let Ok(stream) = acceptor.accept(stream) {
-                        handle_client(stream, &path, reload, &headers);
+                        handle_client(stream, &path, reload, inject, &headers);
                     }
                 } else {
-                    handle_client(stream, &path, reload, &headers);
+                    handle_client(stream, &path, reload, inject, &headers);
                 }
             });
         }

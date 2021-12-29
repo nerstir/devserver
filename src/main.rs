@@ -10,6 +10,7 @@ fn main() {
     let mut headers = "".to_string();
     let mut args = args.iter();
     let mut reload = true;
+    let mut inject = true;
     while let Some(arg) = args.next() {
         match arg.as_ref() {
             "--address" => {
@@ -20,6 +21,8 @@ fn main() {
             }
             "--reload" | "--refresh" => reload = true,
             "--noreload" | "--norefresh" => reload = false,
+            "--inject" => inject = true,
+            "--noinject" => inject = false,
             "--path" => {
                 path = args
                     .next()
@@ -111,6 +114,7 @@ devserver --address 127.0.0.1:8080 --path "some_directory/subdirectory" --header
         port,
         &hosted_path.to_string_lossy(),
         reload,
+        inject,
         &headers,
     );
 }
